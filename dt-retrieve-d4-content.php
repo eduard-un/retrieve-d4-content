@@ -16,6 +16,7 @@ final class DT_Retrieve_D4_Content {
 
 	public static function init(): void {
 		add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
+		add_action( 'add_meta_boxes', array( __CLASS__, 'register_metabox' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 	}
 
@@ -29,8 +30,31 @@ final class DT_Retrieve_D4_Content {
 		);
 	}
 
+	public static function register_metabox(): void {
+		$post_types = get_post_types( array( 'public' => true ), 'names' );
+
+		foreach ( $post_types as $post_type ) {
+			add_meta_box(
+				'dt-d4-content-metabox',
+				'Divi 4 Layout',
+				array( __CLASS__, 'render_metabox' ),
+				$post_type,
+				'normal',
+				'low'
+			);
+		}
+	}
+
+	private static function is_tools_page( string $hook_suffix ): bool {
+		return 'tools_page_' . self::MENU_SLUG === $hook_suffix;
+	}
+
+	private static function is_post_edit_page( string $hook_suffix ): bool {
+		return in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true );
+	}
+
 	public static function enqueue_assets( string $hook_suffix ): void {
-		if ( 'tools_page_' . self::MENU_SLUG !== $hook_suffix ) {
+		if ( ! self::is_tools_page( $hook_suffix ) && ! self::is_post_edit_page( $hook_suffix ) ) {
 			return;
 		}
 
@@ -81,6 +105,44 @@ final class DT_Retrieve_D4_Content {
 				'before'
 			);
 		}
+	}
+
+	public static function render_metabox( WP_Post $post ): void {
+		global $wpdb;
+
+		$content_value = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s LIMIT 1",
+				$post->ID,
+				self::META_KEY
+			)
+		);
+
+		if ( null === $content_value ) {
+			echo '<p class="dt-d4-metabox-empty">No Divi 4 layout found for this post.</p>';
+			return;
+		}
+		?>
+		<div class="dt-d4-metabox-wrap dt-d4-result">
+			<div class="dt-d4-result-header">
+				<span class="dt-d4-result-title">Raw layout &mdash; <code><?php echo esc_html( self::META_KEY ); ?></code></span>
+				<div class="dt-d4-result-actions">
+					<button
+						type="button"
+						class="button dt-d4-save-json"
+						data-source-target="dt_d4_content"
+						data-post-id="<?php echo esc_attr( (string) $post->ID ); ?>"
+						data-meta-key="<?php echo esc_attr( self::META_KEY ); ?>"
+					>
+						Save As JSON
+					</button>
+					<button type="button" class="button dt-d4-copy" data-copy-target="dt_d4_content">Copy to clipboard</button>
+				</div>
+			</div>
+			<textarea id="dt_d4_content" class="dt-d4-code" readonly><?php echo esc_textarea( (string) $content_value ); ?></textarea>
+			<p class="dt-d4-hint">Tip: This is the exact <code>meta_value</code> stored in <code>wp_postmeta</code> for <code><?php echo esc_html( self::META_KEY ); ?></code>.</p>
+		</div>
+		<?php
 	}
 
 	public static function render_admin_page(): void {

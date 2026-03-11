@@ -39,8 +39,12 @@
 				editorInstance = result.codemirror;
 				editorInstance.setOption('readOnly', 'nocursor');
 				editorInstance.refresh();
-				editorInstance.focus();
-				editorInstance.execCommand('selectAll');
+
+				// Delayed refresh so content renders when the container
+				// is inside a metabox that may not be fully laid out yet.
+				setTimeout(function () {
+					editorInstance.refresh();
+				}, 100);
 			}
 		} catch (e) {
 			// If CodeMirror fails for any reason, fallback to plain textarea.
