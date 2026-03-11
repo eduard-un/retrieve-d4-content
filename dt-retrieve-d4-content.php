@@ -35,17 +35,20 @@ final class DT_Retrieve_D4_Content {
 		}
 
 		$plugin_url = plugin_dir_url( __FILE__ );
-		$editor_settings = wp_enqueue_code_editor(
-			array(
-				'type'       => 'text/html',
-				'codemirror' => array(
-					'readOnly'      => true,
-					'lineWrapping'  => true,
-					'lineNumbers'   => true,
-					'scrollbarStyle'=> 'simple',
-				),
-			)
-		);
+		$editor_settings = false;
+		if ( function_exists( 'wp_enqueue_code_editor' ) ) {
+			$editor_settings = wp_enqueue_code_editor(
+				array(
+					'type'       => 'text/html',
+					'codemirror' => array(
+						'readOnly'       => true,
+						'lineWrapping'   => true,
+						'lineNumbers'    => true,
+						'scrollbarStyle' => 'simple',
+					),
+				)
+			);
+		}
 
 		wp_enqueue_script( 'jquery' );
 		$script_deps = array( 'jquery' );
@@ -85,14 +88,13 @@ final class DT_Retrieve_D4_Content {
 		$post_id_raw = isset( $_POST['dt_post_id'] ) ? wp_unslash( $_POST['dt_post_id'] ) : '';
 		$post_id     = is_string( $post_id_raw ) ? absint( $post_id_raw ) : 0;
 
-		$submitted = ( 'POST' === $_SERVER['REQUEST_METHOD'] ) && isset( $_POST['dt_retrieve_d4_submit'] );
-		$nonce_ok  = isset( $_POST['dt_retrieve_d4_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['dt_retrieve_d4_nonce'] ) ), 'dt_retrieve_d4_action' );
+		$submitted = ( 'POST' === $_SERVER['REQUEST_METHOD'] ) && isset( $_POST['dt_retrieve_d4_submit'] ) && isset( $_POST['dt_retrieve_d4_nonce'] );
 
 		$content_value = null;
 		$error_message = '';
 
 		if ( $submitted ) {
-			if ( ! $nonce_ok ) {
+			if ( ! check_admin_referer( 'dt_retrieve_d4_action', 'dt_retrieve_d4_nonce' ) ) {
 				$error_message = 'Security check failed. Please try again.';
 			} elseif ( $post_id <= 0 ) {
 				$error_message = 'Please enter a valid numeric Post/Page ID.';
