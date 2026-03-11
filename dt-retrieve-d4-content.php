@@ -35,6 +35,9 @@ final class DT_Retrieve_D4_Content {
 		}
 
 		$plugin_url = plugin_dir_url( __FILE__ );
+		if ( wp_script_is( 'code-editor', 'registered' ) && ! wp_script_is( 'wp-code-editor', 'registered' ) ) {
+			wp_register_script( 'wp-code-editor', false, array( 'code-editor' ), '1.0.0', true );
+		}
 		$editor_settings = false;
 		if ( function_exists( 'wp_enqueue_code_editor' ) ) {
 			$editor_settings = wp_enqueue_code_editor(
