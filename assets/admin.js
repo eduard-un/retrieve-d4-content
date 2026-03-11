@@ -1,6 +1,31 @@
 (function () {
 	var editorInstance = null;
 
+	function downloadJson(filename, obj) {
+		var json = JSON.stringify(obj);
+		var blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+		var url = URL.createObjectURL(blob);
+		var a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
+		a.style.display = 'none';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		setTimeout(function () {
+			URL.revokeObjectURL(url);
+		}, 1000);
+	}
+
+	function safeFilePart(value) {
+		return String(value || '')
+			.trim()
+			.toLowerCase()
+			.replace(/[^a-z0-9._-]+/g, '-')
+			.replace(/-+/g, '-')
+			.replace(/^-|-$/g, '');
+	}
+
 	function initCodeEditor() {
 		if (!window.wp || !wp.codeEditor) return;
 		if (!window.DT_D4_CODE_EDITOR_SETTINGS) return;
@@ -51,6 +76,43 @@
 			}
 		});
 	}
+
+	document.addEventListener('click', function (e) {
+		var btn = e.target.closest('.dt-d4-save-json');
+		if (!btn) return;
+
+		var targetId = btn.getAttribute('data-source-target') || 'dt_d4_content';
+		var textarea = document.getElementById(targetId);
+		if (!textarea) return;
+
+		var postId = btn.getAttribute('data-post-id') || '';
+		var metaValue = editorInstance ? editorInstance.getValue() : textarea.value;
+		var postIdInt = postId ? parseInt(postId, 10) : NaN;
+		if (!postId || Number.isNaN(postIdInt) || postIdInt <= 0) {
+			postIdInt = null;
+		}
+
+		var payload = {
+			context: 'et_builder',
+			data: {},
+			presets: {},
+			global_colors: [],
+			images: [],
+			thumbnails: [],
+		};
+
+		if (postIdInt) {
+			payload.data[String(postIdInt)] = metaValue;
+		} else {
+			payload.data.unknown = metaValue;
+		}
+
+		var fileName = 'divi4-layout';
+		if (postId) fileName += '-' + safeFilePart(postId);
+		fileName += '.json';
+
+		downloadJson(fileName, payload);
+	});
 
 	document.addEventListener('click', function (e) {
 		var btn = e.target.closest('.dt-d4-copy');

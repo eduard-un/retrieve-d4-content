@@ -154,6 +154,15 @@ final class DT_Retrieve_D4_Content {
 						<div class="dt-d4-result-header">
 							<h2 class="dt-d4-result-title">Divi 4 Layout (raw)</h2>
 							<div class="dt-d4-result-actions">
+								<button
+									type="button"
+									class="button dt-d4-save-json"
+									data-source-target="dt_d4_content"
+									data-post-id="<?php echo esc_attr( (string) $post_id ); ?>"
+									data-meta-key="<?php echo esc_attr( self::META_KEY ); ?>"
+								>
+									Save As JSON
+								</button>
 								<button type="button" class="button dt-d4-copy" data-copy-target="dt_d4_content">Copy to clipboard</button>
 							</div>
 						</div>
